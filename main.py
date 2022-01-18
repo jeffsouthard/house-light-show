@@ -13,7 +13,7 @@ led.direction = digitalio.Direction.OUTPUT
 # These two variables should be adjusted to reflect the number of LEDs you have
 # and how bright you want them.
 num_pixels = 40
-brightness = 0.7
+brightness = 0.2
 
 # This creates the instance of the DoTStar library.
 pixels = adafruit_dotstar.DotStar(
@@ -33,164 +33,89 @@ PURPLE = (180, 0, 255)
 MAGENTA = (255, 0, 20)
 WHITE = (255, 255, 255)
 
-# A list of the ten colors. Use this if you want to cycle through the colors.
-colorList = [RED, YELLOW, ORANGE, GREEN, TEAL, CYAN, BLUE, PURPLE, MAGENTA, WHITE]
 
-# The travel function takes a color and the time between updating the color. It
-# will start at LED one on the strand and fill it with the give color until it
-# reaches the maximum number of pixels that are defined as "num_pixels".
-def travel(color, wait):
-    num_pixels = len(pixels)
-    for pos in range(num_pixels):
-        pixels[pos] = color
-        pixels.show()
-        time.sleep(wait)
-
-
-def travel_single(color, wait):
-    num_pixels = len(pixels)
-    for pos in range(num_pixels):
-        pixels[pos] = color
-        pixels[pos - 1] = BLACK
-        pixels.show()
-        time.sleep(wait)
-
-
-# The travel_back function like the travel function takes a color and the time between
-# updating the color. However it unlike the travel function, it will start at
-# the last LED and works its way to LED. Fill the LED with the given color.
-def travel_back(color, wait):
-    num_pixels = len(pixels)
-    for pos in range(num_pixels, 0, -1):
-        pixels[pos] = color
-        pixels.show()
-        time.sleep(wait)
-
-
-# This function may give you an idea of other functions to create. Here we're
-# starting with green LEDs and then slowing filling the red color until we have
-# a yellow color.
-def green_yellow_wheel(wait):
-    for redColor in range(255):
-        color = (redColor, 150, 0)
-        pixels.fill(color)
-        pixels.show()
-        time.sleep(wait)
-
-
-# You can use this function to get a custom color value.
-# value much in the form of a tuple, like the colors above.
-def wheel(pos):
-    # Input a value 0 to 255 to get a color value.
-    # The colours are a transition r - g - b - back to r.
-    if pos < 0 or pos > 255:
-        return (0, 0, 0)
-    if pos < 85:
-        return (255 - pos * 3, pos * 3, 0)
-    if pos < 170:
-        pos -= 85
-        return (0, 255 - pos * 3, pos * 3)
-    pos -= 170
-    return (pos * 3, 0, 255 - pos * 3)
-
+# Animation setup
+max_tick = 9999
+LR_FIREPLACE = 16
+LR_TO_KITCHEN = [17, 18, 19, 20, 21, 22]
+KITCHEN_TO_DEN = [22, 23, 24, 25, 26]
+BED1_TO_LR = [10, 11, 12, 13, 14, 15, 16, 17]
 
 # This function takes a color and a dely and fills the entire strand with that color.
 # The delay is given in the case you use multiple color fills in a row.
+
+
 def color_fill(color, wait):
     pixels.fill(color)
     pixels.show()
     time.sleep(wait)
 
 
-# Fills the strand with two alternating colors and cycles through the 10 colors
-def slice_alternating(wait):
-
-    num_pixels = len(pixels)
-
-    pixels[::2] = [RED] * (num_pixels // 2)
-    pixels.show()
-    time.sleep(wait)
-    pixels[1::2] = [ORANGE] * (num_pixels // 2)
-    pixels.show()
-    time.sleep(wait)
-    pixels[::2] = [YELLOW] * (num_pixels // 2)
-    pixels.show()
-    time.sleep(wait)
-    pixels[1::2] = [GREEN] * (num_pixels // 2)
-    pixels.show()
-    time.sleep(wait)
-    pixels[::2] = [TEAL] * (num_pixels // 2)
-    pixels.show()
-    time.sleep(wait)
-    pixels[1::2] = [CYAN] * (num_pixels // 2)
-    pixels.show()
-    time.sleep(wait)
-    pixels[::2] = [BLUE] * (num_pixels // 2)
-    pixels.show()
-    time.sleep(wait)
-    pixels[1::2] = [PURPLE] * (num_pixels // 2)
-    pixels.show()
-    time.sleep(wait)
-    pixels[::2] = [MAGENTA] * (num_pixels // 2)
-    pixels.show()
-    time.sleep(wait)
-    pixels[1::2] = [WHITE] * (num_pixels // 2)
-    pixels.show()
-    time.sleep(wait)
-
-
-# This function divides the given number of pixels and fills them as evenly as
-# possible with a rainbow pattern (RED, ORANGE, YELLOW, GREEN, BLUE, PURPLE)
-# which repeats every 6 LEDs.
-def slice_rainbow(wait):
-
-    num_pixels = len(pixels)
-
-    pixels[::6] = [RED] * math.ceil(num_pixels / 6)
-    pixels.show()
-    time.sleep(wait)
-    pixels[1::6] = [ORANGE] * math.ceil((num_pixels - 1) / 6)
-    pixels.show()
-    time.sleep(wait)
-    pixels[2::6] = [YELLOW] * math.ceil((num_pixels - 2) / 6)
-    pixels.show()
-    time.sleep(wait)
-    pixels[3::6] = [GREEN] * math.ceil((num_pixels - 3) / 6)
-    pixels.show()
-    time.sleep(wait)
-    pixels[4::6] = [BLUE] * math.ceil((num_pixels - 4) / 6)
-    pixels.show()
-    time.sleep(wait)
-    pixels[5::6] = [PURPLE] * math.ceil((num_pixels - 5) / 6)
-    pixels.show()
-    time.sleep(wait)
-
-
-# This function makes a strand of LEDs look like a rainbow flag that travels
-# along the length of the strand. It is not infinitely contniuous and will stop
-# after any single LED has cycled through every color.
-def rainbow_cycle(wait):
-    num_pixels = len(pixels)
-    for j in range(255):
-        for i in range(num_pixels):
-            rc_index = (i * 256 // num_pixels) + j
-            pixels[i] = wheel(rc_index & 255)
-        pixels.show()
-        time.sleep(wait)
-
-
 print("Clearing LEDs.")
 color_fill(BLACK, 0)
 
-# green_yellow_wheel(.5)
+tick = 0
+
+
+def flicker(pos, colors):
+    if tick % 2 < 1:
+        pixels[pos] = colors[0]
+    else:
+        pixels[pos] = colors[1]
+
+
+def blink_board_light():
+    led.value = tick % 20 < 5
+
+
+def fireplace(start=0, end=max_tick):
+    if tick == start:
+        print("fireplace", start, end)
+    if start <= tick < end:
+        flickering = tick < end - 1
+        pos = LR_FIREPLACE
+        if flickering:
+            flicker(pos, [(255, 0, 0, 0.1), (255, 150, 0, 0.1)])
+        else:
+            pixels[pos] = BLACK
+
+
+def walk(start, path, reverse=False):
+    if tick == start:
+        print("walk", start, path, reverse)
+    if start <= tick < start+len(path):
+        pos = tick % start
+        old_pos = pos - 1
+        if reverse:
+            pos = (len(path) - pos) - 1
+            old_pos = pos + 1
+        # print(pos, old_pos, len(path))
+        pixels[path[pos]] = WHITE
+        if 0 <= old_pos < len(path):
+            pixels[path[old_pos]] = BLACK
+
 
 while True:
-    travel_single(WHITE, 0.3)
+    # print(tick)
+    blink_board_light()
 
+    # stand_by_fireplace(True)
+    walk(10, BED1_TO_LR)
+    fireplace(30, 250)
+    walk(130, LR_TO_KITCHEN)
+    walk(160, KITCHEN_TO_DEN)
+    walk(180, KITCHEN_TO_DEN, reverse=True)
+    walk(190, LR_TO_KITCHEN, reverse=True)
+    walk(240, BED1_TO_LR, reverse=True)
+    if tick > 300:
+        tick = 0
 
-# Ah trusty ol' blink.
-while True:
-    led.value = True
-    time.sleep(0.5)
-    led.value = False
-    time.sleep(0.5)
+    pixels.show()
+    time.sleep(0.01)
+    tick = tick + 1
+
+    # travel_single(WHITE, 0.01)
+    # led.value = True
+    # time.sleep(0.5)
+    # led.value = False
+    # time.sleep(0.5)
