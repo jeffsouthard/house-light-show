@@ -18,7 +18,7 @@ button6.pull = digitalio.Pull.UP
 # These two variables should be adjusted to reflect the number of LEDs you have
 # and how bright you want them.
 num_pixels = 44
-brightness = 0.4
+brightness = 0.8
 
 tick_move_dur = 0.02
 tick_flicker_dur = 0.01
@@ -46,9 +46,13 @@ jack = (98, 193, 188)
 max_tick = 9999
 fire = 8
 tv = [29, 34]
+tv_colors = [(129, 233, 226, 0.1), (240, 243, 90, 0.1)]
 # starting in bedroom 1
 br1_2_to_br1_1 = [1, 0]
+br1_1_to_c2 = [0, 3, 2, 13]
 br1_1_to_bath = [0, 3, 4, 11, 16, 15, 14]
+br1_1_to_lr1 = [0, 3, 4, 5, 6]
+br1_4_to_bath = [2, 3, 4, 11, 16, 15, 14]
 br1_4_to_lr2 = [2, 3, 4, 5, 10, 9]
 br1_1_to_k1 = [0, 3, 4, 5, 10, 18, 21, 30, 33, 39, 40, 41]
 br1_4_to_k1 = [2, 3, 4, 11, 16, 23, 28, 35, 38, 39, 40, 41]
@@ -66,8 +70,14 @@ k4_to_door2 = [41, 40, 39, 38]
 k4_to_d2 = [41, 40, 39, 38, 35]
 
 # starting in dining room
-d2_to_d4 = [30, 33]
-d4_to_door2 = [33, 39, 38]
+dr2_to_dr4 = [30, 33]
+dr4_to_door2 = [33, 39, 38]
+
+# starting in den
+d2_to_bath = [35, 28, 23, 15, 14]
+
+# starting in LR
+lr1_to_b2_3 = [6, 5, 4, 11, 16, 24, 27, 36]
 
 # This function takes a color and a dely and fills the entire strand with that color.
 # The delay is given in the case you use multiple color fills in a row.
@@ -106,7 +116,7 @@ def fireplace(start=0, end=max_tick):
         flickering = tick_move < end - 1
         pos = fire
         if flickering:
-            flicker(pos, [(255, 0, 0, 0.1), (255, 150, 0, 0.1)])
+            flicker(pos, [(246, 195, 64, 0.4), (214, 134, 14, 0.4)])
         else:
             pixels[pos] = BLACK
 
@@ -117,8 +127,8 @@ def tv_on(start=0, end=max_tick):
     if start <= tick_move < end:
         flickering = tick_move < end - 1
         if flickering:
-            flicker(tv[0], [(255, 0, 0, 0.1), (255, 150, 0, 0.1)])
-            flicker(tv[1], [(30, 150, 0, 0.1), (100, 150, 50, 0.1)])
+            flicker(tv[0], tv_colors)
+            flicker(tv[1], list(reversed(tv_colors)))
         else:
             pixels[tv[0]] = BLACK
             pixels[tv[1]] = BLACK
@@ -173,13 +183,17 @@ def loop(start, times, color, path):
 
 print("Clearing LEDs.")
 color_fill(BLACK, 0)
-tick_move = 280  # advances each second, for walking
-tick_move_last = 400
+tick_move = 0  # advances each second, for walking
+tick_move_last = 640
 flickers_per_move = tick_move_dur / tick_flicker_dur
 button6_down_already = not button6.value
 running = True
 
 while running and (tick_move <= tick_move_last):
+    if tick_move >= tick_move_last:
+        tick_move = 0
+        color_fill(BLACK, 0)
+
     tick_flicker = 0
 
     # handle button6
@@ -198,7 +212,6 @@ while running and (tick_move <= tick_move_last):
     if running:
         print(tick_move, end=" ")
         # Jeff up
-        # loop(1, 4, jeff, k1_loop)
         rest(1, jeff, br1_2_to_br1_1)
         rest(1, maria, br1_4_to_lr2)
         walk(10, jeff, br1_2_to_br1_1)
@@ -216,9 +229,9 @@ while running and (tick_move <= tick_move_last):
         rest(137, maria, br1_4_to_k1)
         walk(150, jeff, k4_to_d4)
         walk(155, jeff, k4_to_d4, reverse=True)
-        walk(156, penny, d2_to_d4)
+        walk(156, penny, dr2_to_dr4)
         # penny out
-        walk(170, penny, d4_to_door2)
+        walk(170, penny, dr4_to_door2)
         walk(175, jeff, k4_to_door2)
         walk(180, jeff, k4_to_door2, reverse=True)
         # penny in then to bedroom
@@ -234,18 +247,29 @@ while running and (tick_move <= tick_move_last):
         walk(290, jeff, k4_to_d2)
 
         # Maria getting up
-        #    walk(2, maria, br1_4_to_lr2)
-        #    walk(64, maria, lr2_to_k4)
-        #    walk(71, maria, k4_to_d1)
-        #    walk(180, maria, k4_to_d1, reverse=True)
-        #    walk(190, maria, lr2_to_k4, reverse=True)
-        #    walk(240, maria, br1_4_to_lr2, reverse=True)
+        walk(310, maria, br1_4_to_bath)
+        walk(320, maria, br1_4_to_bath, reverse=True)
+        # M to LR, fire on, then to kitchen
+        walk(330, maria, br1_4_to_lr2)
+        walk(394, maria, lr2_to_k4)
+        # Penny to LR, M return
+        walk(400, penny, br1_4_to_lr2)
+        walk(410, maria, lr2_to_k4, reverse=True)
+        # Jeff done workout; take shower
+        walk(430, jeff, d2_to_bath)
+        walk(470, jeff, br1_1_to_bath, reverse=True)
+        # J to bedroom and closet getting dressed
+        walk(490, jeff, br1_1_to_c2)
+        walk(500, jeff, br1_1_to_c2, reverse=True)
+        # Jeff to LR, then to work in guest room
+        walk(505, jeff, br1_1_to_lr1)
+        walk(560, jeff, lr1_to_b2_3)
 
         # Flickering
         while tick_flicker < flickers_per_move:
             # blink_board_light()
-            tv_on(300, 400)
-            # fireplace(10, 250)
+            tv_on(300, 425)
+            fireplace(340, 640)
             # print(tick_move, tick_flicker)
             pixels.show()
             tick_flicker = tick_flicker + 1
