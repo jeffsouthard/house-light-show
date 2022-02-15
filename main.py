@@ -20,7 +20,7 @@ button6.pull = digitalio.Pull.UP
 num_pixels = 44
 brightness = 0.8
 
-tick_move_dur = 0.02
+tick_move_dur = 0.04
 tick_flicker_dur = 0.01
 
 # This creates the instance of the DoTStar library.
